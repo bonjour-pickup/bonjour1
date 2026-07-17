@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>봉주르후르츠 픽업 체크</title>
+<style>
+  :root{
+    --bg:#FAFAF6;
+    --surface:#FFFFFF;
+    --ink:#22291F;
+    --ink-soft:#6B7364;
+    --line:#E7E3D8;
+    --citrus:#E8762C;
+    --citrus-soft:#FBEADD;
+    --leaf:#4A7C59;
+    --leaf-soft:#E7F1E9;
+    --alert:#C7523A;
+    --alert-soft:#FBEAE6;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 100px;}
+
+  /* Header */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:var(--bg);
+    padding:18px 16px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:-0.3px;}
+  .brand .stamp{
+    font-size:11px;font-weight:700;color:var(--citrus);
+    border:1.5px solid var(--citrus);border-radius:20px;
+    padding:3px 9px;transform:rotate(-4deg);white-space:nowrap;
+  }
+  .datebar{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .datebar input[type=date]{
+    border:1px solid var(--line);background:var(--surface);border-radius:9px;
+    padding:6px 8px;font-size:13px;color:var(--ink);
+  }
+  .sync{font-size:11px;color:var(--ink-soft);margin-left:auto;display:flex;align-items:center;gap:5px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--leaf);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px 4px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 8px;text-align:center;}
+  .stat b{display:block;font-size:20px;font-weight:800;}
+  .stat span{font-size:11px;color:var(--ink-soft);}
+  .stat.done b{color:var(--leaf);}
+  .stat.left b{color:var(--citrus);}
+
+  .prodbar{padding:2px 16px 10px;display:flex;flex-wrap:wrap;gap:6px;}
+  .prodchip{
+    background:var(--citrus-soft);color:#8C4A18;font-size:12px;font-weight:600;
+    padding:5px 10px;border-radius:20px;white-space:nowrap;
+  }
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;padding:4px 16px 12px;}
+  .tab{flex:1;text-align:center;padding:9px 0;border-radius:10px;font-size:13px;font-weight:700;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink-soft);cursor:pointer;}
+  .tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  section{padding:0 16px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:16px;}
+  .card h2{font-size:14px;margin:0 0 10px;font-weight:800;}
+  .row{display:flex;gap:8px;margin-bottom:8px;}
+  .row input, .row textarea{
+    flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:14px;
+    font-family:inherit;background:var(--bg);color:var(--ink);
+  }
+  textarea{min-height:70px;resize:vertical;}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin:-2px 0 10px;line-height:1.5;}
+  .btn{
+    border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;
+    cursor:pointer;transition:transform .08s ease;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--ink);color:#fff;width:100%;}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+  .btn-alert{background:var(--alert);color:#fff;width:100%;}
+
+  .search{padding:0 16px 10px;}
+  .search input{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
+    background:var(--surface);
+  }
+
+  /* Order list */
+  .order{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 14px;margin-bottom:10px;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .order.picked{background:var(--leaf-soft);border-color:#C9E1CF;}
+  .order .toprow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .order .name{font-size:15.5px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .progress-badge{font-size:10.5px;font-weight:700;color:var(--ink-soft);background:var(--bg);padding:2px 8px;border-radius:8px;}
+  .order.picked .progress-badge{color:var(--leaf);background:var(--leaf-soft);}
+  .noshow-badge{font-size:10px;background:var(--alert-soft);color:var(--alert);padding:2px 6px;border-radius:8px;font-weight:700;}
+  .order .note{font-size:11.5px;color:var(--citrus);margin:2px 0 8px;}
+  .item-line{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 0;border-top:1px dashed var(--line);
+  }
+  .item-line:first-of-type{border-top:none;}
+  .item-name{font-size:13.5px;color:var(--ink);}
+  .item-name b{font-weight:800;color:var(--citrus);margin-left:4px;}
+  .item-check{
+    border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);
+    border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer;
+    flex-shrink:0;transition:all .15s ease;
+  }
+  .item-check.on{background:var(--leaf);border-color:var(--leaf);color:#fff;}
+  .del{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0;}
+
+  .empty{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:40px 20px;}
+
+  /* Today summary table */
+  .summary-wrap{overflow-x:auto;margin-bottom:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);}
+  .summary-table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap;}
+  .summary-table th, .summary-table td{padding:8px 12px;text-align:center;border-bottom:1px solid var(--line);}
+  .summary-table th{background:var(--bg);font-weight:800;color:var(--ink-soft);font-size:11.5px;position:sticky;top:0;}
+  .summary-table td:first-child, .summary-table th:first-child{
+    text-align:left;font-weight:700;position:sticky;left:0;background:var(--surface);
+  }
+  .summary-table th:first-child{background:var(--bg);}
+  .summary-table tr:last-child td{border-bottom:none;}
+  .summary-table .qty-done{color:var(--leaf);}
+  .summary-table .qty-left{color:var(--citrus);font-weight:700;}
+  .summary-table .qty-empty{color:var(--line);}
+
+  .footer-actions{
+    position:fixed;bottom:0;left:0;right:0;background:var(--surface);
+    border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    max-width:640px;margin:0 auto;
+  }
+
+  .noshow-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .noshow-item:last-child{border-bottom:none;}
+  .noshow-item b{font-size:12px;background:var(--alert-soft);color:var(--alert);padding:2px 8px;border-radius:8px;}
+
+  ::placeholder{color:#B5B0A2;}
+
+  /* Print */
+  #printArea{display:none;}
+  .print-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .print-header h1{font-size:17px;margin:0;font-weight:800;}
+  .print-header span{font-size:12px;color:#444;}
+  .print-table{width:100%;border-collapse:collapse;}
+  .print-table thead{display:table-header-group;}
+  .print-table tr{page-break-inside:avoid;}
+  .print-table th, .print-table td{border:1px solid #999;text-align:center;}
+  .print-table td.pname{text-align:left;font-weight:700;}
+  .print-lg{font-size:13px;}
+  .print-lg th, .print-lg td{padding:6px 8px;}
+  .print-md{font-size:10.5px;}
+  .print-md th, .print-md td{padding:4px 6px;}
+  .print-sm{font-size:8.5px;}
+  .print-sm th, .print-sm td{padding:2px 4px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block !important;position:absolute;left:0;top:0;width:100%;}
+    @page{size:A4 portrait;margin:12mm;}
+  }
+  .toast{
+    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, bottom .25s ease;z-index:50;
+  }
+  .toast.show{opacity:1;bottom:96px;}
+
+  /* Close-day result modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(34,41,31,.55);
+    display:flex;align-items:flex-end;justify-content:center;z-index:60;
+  }
+  .modal-card{
+    background:var(--surface);width:100%;max-width:640px;max-height:82vh;
+    border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    overflow-y:auto;
+  }
+  .modal-card h2{font-size:16px;margin:0 0 4px;font-weight:800;}
+  .modal-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;}
+  .modal-empty{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:24px 0;}
+  .result-row{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    padding:11px 0;border-bottom:1px solid var(--line);
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-row .rname{font-weight:800;font-size:14.5px;}
+  .result-row .ritems{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .result-row .rtotal{
+    font-size:12px;font-weight:700;color:var(--alert);background:var(--alert-soft);
+    padding:3px 9px;border-radius:10px;white-space:nowrap;flex-shrink:0;
+  }
+  .result-summary{
+    display:flex;gap:8px;margin:14px 0 6px;padding:10px 12px;background:var(--bg);
+    border-radius:10px;font-size:12.5px;color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>🍊 봉주르후르츠 픽업</h1>
+      <span class="stamp">STAFF SHARED</span>
+    </div>
+    <div class="datebar">
+      <input type="date" id="dateInput" />
+      <button class="btn btn-ghost" id="resetBtn" style="padding:6px 10px;font-size:12px;">🗑 초기화</button>
+      <div class="sync"><span class="dot"></span><span id="syncLabel">실시간 동기화</span></div>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="statTotal">0</b><span>총 주문</span></div>
+    <div class="stat done"><b id="statDone">0</b><span>수령완료</span></div>
+    <div class="stat left"><b id="statLeft">0</b><span>미수령</span></div>
+  </div>
+  <div class="prodbar" id="prodBar"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="list">📋 픽업 리스트</div>
+    <div class="tab" data-tab="add">➕ 주문 입력</div>
+    <div class="tab" data-tab="noshow">🚫 노쇼 기록</div>
+  </div>
+
+  <!-- LIST TAB -->
+  <section id="tab-list">
+    <div class="search"><input id="searchInput" placeholder="이름으로 검색..." /></div>
+    <div style="padding:0 16px 10px;display:flex;justify-content:flex-end;">
+      <button class="btn btn-ghost" id="printBtn" style="padding:7px 14px;font-size:12.5px;">🖨 명단 출력</button>
+    </div>
+    <div class="summary-wrap"><table class="summary-table" id="summaryTable"></table></div>
+    <div id="orderList"></div>
+  </section>
+
+  <!-- ADD TAB -->
+  <section id="tab-add" style="display:none;">
+    <div class="card">
+      <h2>빠른 추가</h2>
+      <div class="row">
+        <input id="qName" placeholder="주문자명" />
+      </div>
+      <div class="row">
+        <input id="qProduct" placeholder="상품명 (예: 사과1세트)" />
+        <input id="qQty" type="number" min="1" placeholder="수량" style="max-width:80px;" />
+      </div>
+      <div class="row">
+        <input id="qNote" placeholder="비고 (선택)" />
+      </div>
+      <button class="btn btn-primary" id="addOneBtn">주문 추가</button>
+      <p class="hint">같은 이름으로 다시 추가하면 자동으로 합산/추가돼요.</p>
+    </div>
+
+    <div class="card">
+      <h2>일괄 붙여넣기</h2>
+      <div class="row">
+        <textarea id="bulkInput" placeholder="한 줄에 하나씩:&#10;이름,상품,수량,비고&#10;김철수,사과1세트,2&#10;이영희,배1박스,1,오후늦게"></textarea>
+      </div>
+      <button class="btn btn-primary" id="bulkAddBtn">일괄 추가</button>
+      <p class="hint">Claude로 스크린샷을 정리한 표를 이 형식으로 붙여넣으면 한 번에 등록돼요.</p>
+    </div>
+  </section>
+
+  <!-- NOSHOW TAB -->
+  <section id="tab-noshow" style="display:none;">
+    <div class="card">
+      <h2>노쇼 누적 기록</h2>
+      <div id="noshowList"><div class="empty">기록이 없습니다</div></div>
+    </div>
+  </section>
+</div>
+
+<div class="footer-actions" id="footerActions" style="display:none;">
+  <button class="btn btn-alert" id="closeDayBtn">🔒 마감</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="printArea"></div>
+
+<div class="modal-overlay" id="resetModal" style="display:none;">
+  <div class="modal-card" style="max-height:none;">
+    <h2>🗑 목록 초기화</h2>
+    <p class="modal-sub" id="resetModalText" style="margin-bottom:16px;"></p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="resetCancelBtn" style="flex:1;">취소</button>
+      <button class="btn btn-alert" id="resetOkBtn" style="flex:1;">전체 삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal" style="display:none;">
+  <div class="modal-card" style="max-height:none;">
+    <h2>🔒 마감 확인</h2>
+    <p class="modal-sub" id="confirmModalText" style="margin-bottom:16px;"></p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" id="confirmCancelBtn" style="flex:1;">취소</button>
+      <button class="btn btn-alert" id="confirmOkBtn" style="flex:1;">마감 확정</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="closeModal" style="display:none;">
+  <div class="modal-card">
+    <h2>🔒 마감 결과</h2>
+    <p class="modal-sub" id="closeModalDate"></p>
+    <div id="closeResultsList"></div>
+    <button class="btn btn-primary" id="closeModalOkBtn" style="margin-top:14px;">확인</button>
+  </div>
+</div>
+
+<script>
+// Claude 아티팩트의 window.storage와 동일한 인터페이스를 실제 서버 API로 연결
+window.storage = {
+  async get(key){
+    const res = await fetch('/api/kv/' + encodeURIComponent(key));
+    if(res.status === 404) return null;
+    if(!res.ok) throw new Error('storage get failed');
+    return res.json(); // { key, value }
+  },
+  async set(key, value){
+    const res = await fetch('/api/kv/' + encodeURIComponent(key), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value })
+    });
+    if(!res.ok) throw new Error('storage set failed');
+    return res.json();
+  }
+};
+
+const $ = (s) => document.querySelector(s);
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+let currentDate = todayStr();
+let orders = [];
+let noshowLog = [];
+let pollTimer = null;
+let lastLocalChange = 0;
+
+$('#dateInput').value = currentDate;
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function ordersKey(date){ return `orders:${date}`; }
+
+async function loadOrders(){
+  try{
+    const res = await window.storage.get(ordersKey(currentDate), true);
+    orders = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    orders = [];
+  }
+  render();
+}
+
+async function saveOrders(){
+  try{
+    await window.storage.set(ordersKey(currentDate), JSON.stringify(orders), true);
+  }catch(e){
+    toast('저장 실패, 다시 시도해주세요');
+  }
+}
+
+async function loadNoshow(){
+  try{
+    const res = await window.storage.get('noshow-log', true);
+    noshowLog = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    noshowLog = [];
+  }
+  renderNoshow();
+}
+
+async function saveNoshow(){
+  try{
+    await window.storage.set('noshow-log', JSON.stringify(noshowLog), true);
+  }catch(e){
+    toast('저장 실패, 다시 시도해주세요');
+  }
+}
+
+function findOrGroupByName(name){
+  return orders.find(o => o.name === name.trim());
+}
+
+function addItem(name, product, qty, note){
+  name = name.trim();
+  if(!name || !product.trim() || !qty || qty <= 0) return false;
+  let o = findOrGroupByName(name);
+  if(!o){
+    o = { id: Date.now()+Math.random().toString(16).slice(2), name, items:{}, note: note||'' };
+    orders.push(o);
+  }
+  const p = product.trim();
+  const prevQty = o.items[p] ? o.items[p].qty : 0;
+  o.items[p] = { qty: prevQty + Number(qty), picked:false, pickedAt:null };
+  if(note) o.note = note;
+  return true;
+}
+
+$('#addOneBtn').addEventListener('click', async ()=>{
+  const name = $('#qName').value;
+  const product = $('#qProduct').value;
+  const qty = parseInt($('#qQty').value, 10);
+  const note = $('#qNote').value;
+  if(addItem(name, product, qty, note)){
+    lastLocalChange = Date.now();
+    await saveOrders();
+    $('#qName').value=''; $('#qProduct').value=''; $('#qQty').value=''; $('#qNote').value='';
+    render();
+    toast('주문이 추가됐어요');
+    switchTab('list');
+  } else {
+    toast('이름/상품/수량을 확인해주세요');
+  }
+});
+
+$('#bulkAddBtn').addEventListener('click', async ()=>{
+  const raw = $('#bulkInput').value.trim();
+  if(!raw){ toast('붙여넣을 내용이 없어요'); return; }
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  let count = 0;
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 3) return;
+    const [name, product, qtyStr, note] = parts;
+    const qty = parseInt(qtyStr, 10);
+    if(addItem(name, product, qty, note)) count++;
+  });
+  if(count > 0){
+    lastLocalChange = Date.now();
+    await saveOrders();
+    $('#bulkInput').value = '';
+    render();
+    toast(`${count}건 추가됐어요`);
+    switchTab('list');
+  } else {
+    toast('형식을 확인해주세요 (이름,상품,수량)');
+  }
+});
+
+function allItemsPicked(o){
+  const entries = Object.values(o.items);
+  return entries.length > 0 && entries.every(it=>it.picked);
+}
+
+function unpickedItemsMap(o){
+  const map = {};
+  Object.entries(o.items).forEach(([p,it])=>{
+    if(!it.picked) map[p] = it.qty;
+  });
+  return map;
+}
+
+async function toggleItemPicked(id, product){
+  const o = orders.find(x=>x.id===id);
+  if(!o || !o.items[product]) return;
+  const it = o.items[product];
+  it.picked = !it.picked;
+  it.pickedAt = it.picked ? new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : null;
+  render();
+  lastLocalChange = Date.now();
+  await saveOrders();
+}
+
+async function deleteOrder(id){
+  orders = orders.filter(x=>x.id!==id);
+  render();
+  lastLocalChange = Date.now();
+  await saveOrders();
+}
+
+let pendingFlagged = null;
+
+$('#resetBtn').addEventListener('click', ()=>{
+  if(orders.length === 0){
+    toast('이미 목록이 비어있어요');
+    return;
+  }
+  $('#resetModalText').textContent = `${currentDate} 주문 목록 ${orders.length}건을 모두 삭제할까요? 노쇼 기록은 유지돼요.`;
+  $('#resetModal').style.display = 'flex';
+});
+
+$('#resetCancelBtn').addEventListener('click', ()=>{
+  $('#resetModal').style.display = 'none';
+});
+
+$('#resetOkBtn').addEventListener('click', async ()=>{
+  $('#resetModal').style.display = 'none';
+  orders = [];
+  render();
+  lastLocalChange = Date.now();
+  await saveOrders();
+  toast('오늘 주문 목록이 초기화됐어요');
+});
+
+$('#closeDayBtn').addEventListener('click', ()=>{
+  const flagged = orders
+    .filter(o=>!allItemsPicked(o))
+    .map(o=>({name:o.name, items:unpickedItemsMap(o)}))
+    .filter(e=>Object.keys(e.items).length > 0);
+
+  if(flagged.length === 0){
+    showCloseResults([]);
+    return;
+  }
+  pendingFlagged = flagged;
+  $('#confirmModalText').textContent = `미수령 ${flagged.length}명을 노쇼로 기록하고 마감할까요?`;
+  $('#confirmModal').style.display = 'flex';
+});
+
+$('#confirmCancelBtn').addEventListener('click', ()=>{
+  pendingFlagged = null;
+  $('#confirmModal').style.display = 'none';
+});
+
+$('#confirmOkBtn').addEventListener('click', async ()=>{
+  $('#confirmModal').style.display = 'none';
+  const flagged = pendingFlagged;
+  pendingFlagged = null;
+  if(!flagged) return;
+
+  flagged.forEach(e=>{
+    noshowLog.push({ name:e.name, date:currentDate, items:e.items });
+  });
+  await saveNoshow();
+  renderNoshow();
+  showCloseResults(flagged);
+});
+
+function showCloseResults(flaggedList){
+  $('#closeModalDate').textContent = `${currentDate} · 미수령(노쇼) ${flaggedList.length}명`;
+  const listEl = $('#closeResultsList');
+
+  if(flaggedList.length === 0){
+    listEl.innerHTML = '<div class="modal-empty">🎉 오늘은 노쇼 없이 전원 수령 완료했어요</div>';
+  } else {
+    const productTotals = {};
+    flaggedList.forEach(e=>{
+      Object.entries(e.items).forEach(([p,q])=>{
+        productTotals[p] = (productTotals[p]||0) + q;
+      });
+    });
+    const summaryText = Object.entries(productTotals).map(([p,q])=>`${p} ${q}개`).join(' · ');
+
+    listEl.innerHTML =
+      `<div class="result-summary">품목별 노쇼 합계: ${summaryText}</div>` +
+      flaggedList
+        .sort((a,b)=>a.name.localeCompare(b.name,'ko'))
+        .map(e=>{
+          const total = Object.values(e.items).reduce((s,q)=>s+q,0);
+          return `
+          <div class="result-row">
+            <div>
+              <div class="rname">${e.name}</div>
+              <div class="ritems">${itemsToText(e.items)}</div>
+            </div>
+            <div class="rtotal">${total}개 노쇼</div>
+          </div>`;
+        }).join('');
+  }
+  $('#closeModal').style.display = 'flex';
+}
+
+$('#closeModalOkBtn').addEventListener('click', ()=>{
+  $('#closeModal').style.display = 'none';
+});
+
+function itemsToText(items){
+  return Object.entries(items).map(([p,q])=>`${p} ${q}`).join(' · ');
+}
+
+function attr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function render(){
+  const q = $('#searchInput').value.trim().toLowerCase();
+  const list = $('#orderList');
+  const filtered = orders.filter(o => o.name.toLowerCase().includes(q));
+
+  renderSummaryTable(filtered);
+
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="empty">${orders.length===0 ? '아직 등록된 주문이 없어요' : '검색 결과가 없어요'}</div>`;
+  } else {
+    list.innerHTML = filtered
+      .sort((a,b)=> Number(allItemsPicked(a)) - Number(allItemsPicked(b)) || a.name.localeCompare(b.name,'ko'))
+      .map(o=>{
+        const noshowCount = noshowLog.filter(n=>n.name===o.name).length;
+        const entries = Object.entries(o.items);
+        const pickedCount = entries.filter(([,it])=>it.picked).length;
+        const done = allItemsPicked(o);
+        return `
+        <div class="order ${done?'picked':''}">
+          <div class="toprow">
+            <div class="name">${o.name}${noshowCount>0?`<span class="noshow-badge">노쇼 ${noshowCount}회</span>`:''}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="progress-badge">${pickedCount}/${entries.length} 수령</span>
+              <button class="del" data-id="${o.id}">✕</button>
+            </div>
+          </div>
+          ${o.note ? `<div class="note">📝 ${o.note}</div>` : ''}
+          ${entries.map(([p,it])=>`
+            <div class="item-line">
+              <span class="item-name">${p}<b>${it.qty}</b></span>
+              <button class="item-check ${it.picked?'on':''}" data-id="${o.id}" data-product="${attr(p)}">
+                ${it.picked ? `✓ 수령${it.pickedAt?` ${it.pickedAt}`:''}` : '수령 체크'}
+              </button>
+            </div>`).join('')}
+        </div>`;
+      }).join('');
+  }
+
+  const total = orders.length;
+  const done = orders.filter(o=>allItemsPicked(o)).length;
+  $('#statTotal').textContent = total;
+  $('#statDone').textContent = done;
+  $('#statLeft').textContent = total - done;
+
+  const prodTotals = {};
+  orders.forEach(o=>{
+    Object.entries(unpickedItemsMap(o)).forEach(([p,q])=>{
+      prodTotals[p] = (prodTotals[p]||0) + q;
+    });
+  });
+  $('#prodBar').innerHTML = Object.entries(prodTotals)
+    .map(([p,q])=>`<span class="prodchip">${p} 남음 ${q}</span>`).join('')
+    || '<span class="prodchip">미수령 상품 없음</span>';
+
+  $('#footerActions').style.display = total > 0 ? 'block' : 'none';
+}
+
+function renderSummaryTable(filtered){
+  const table = $('#summaryTable');
+  if(filtered.length === 0){
+    table.innerHTML = '';
+    return;
+  }
+  const products = [];
+  filtered.forEach(o=>Object.keys(o.items).forEach(p=>{ if(!products.includes(p)) products.push(p); }));
+
+  const head = `<tr><th>고객명</th>${products.map(p=>`<th>${p}</th>`).join('')}</tr>`;
+  const rows = filtered
+    .slice()
+    .sort((a,b)=>a.name.localeCompare(b.name,'ko'))
+    .map(o=>{
+      const cells = products.map(p=>{
+        const it = o.items[p];
+        if(!it) return '<td class="qty-empty">-</td>';
+        return `<td class="${it.picked?'qty-done':'qty-left'}">${it.qty}${it.picked?' ✓':''}</td>`;
+      }).join('');
+      return `<tr><td>${o.name}</td>${cells}</tr>`;
+    }).join('');
+
+  table.innerHTML = head + rows;
+}
+
+function renderNoshow(){
+  const el = $('#noshowList');
+  if(noshowLog.length === 0){
+    el.innerHTML = '<div class="empty">기록이 없습니다</div>';
+    return;
+  }
+  const counts = {};
+  noshowLog.forEach(n => counts[n.name] = (counts[n.name]||0)+1);
+  const names = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  el.innerHTML = names.map(name=>{
+    const records = noshowLog.filter(n=>n.name===name).slice(-3).reverse();
+    const dates = records.map(r=>r.date).join(', ');
+    return `<div class="noshow-item"><span>${name} <span style="color:var(--ink-soft);font-size:11.5px;">(${dates})</span></span><b>${counts[name]}회</b></div>`;
+  }).join('');
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  $('#tab-list').style.display = name==='list' ? '' : 'none';
+  $('#tab-add').style.display = name==='add' ? '' : 'none';
+  $('#tab-noshow').style.display = name==='noshow' ? '' : 'none';
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click', ()=>switchTab(t.dataset.tab)));
+
+$('#searchInput').addEventListener('input', render);
+$('#dateInput').addEventListener('change', (e)=>{
+  currentDate = e.target.value;
+  loadOrders();
+});
+
+$('#orderList').addEventListener('click', (e)=>{
+  const checkBtn = e.target.closest('.item-check');
+  if(checkBtn){
+    toggleItemPicked(checkBtn.dataset.id, checkBtn.dataset.product);
+    return;
+  }
+  const delBtn = e.target.closest('.del');
+  if(delBtn){
+    deleteOrder(delBtn.dataset.id);
+  }
+});
+
+$('#printBtn').addEventListener('click', ()=>{
+  const q = $('#searchInput').value.trim().toLowerCase();
+  const filtered = orders
+    .filter(o => o.name.toLowerCase().includes(q))
+    .slice()
+    .sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+
+  if(filtered.length === 0){
+    toast('출력할 주문이 없어요');
+    return;
+  }
+
+  const products = [];
+  filtered.forEach(o=>Object.keys(o.items).forEach(p=>{ if(!products.includes(p)) products.push(p); }));
+
+  // 상품 칼럼 수가 많을수록 한 줄이 길어지므로 함께 고려해 1장 → 최대 3장 목표로 폰트 크기 자동 조정
+  const rows = filtered.length;
+  const complexity = rows * (1 + products.length * 0.15);
+  let sizeClass = 'print-lg';
+  if(complexity > 130) sizeClass = 'print-sm';
+  else if(complexity > 55) sizeClass = 'print-md';
+
+  const head = `<tr><th>No</th><th>고객명</th>${products.map(p=>`<th>${p}</th>`).join('')}<th>합계</th><th>비고</th></tr>`;
+  const bodyRows = filtered.map((o,i)=>{
+    const cells = products.map(p=>{
+      const it = o.items[p];
+      return `<td>${it ? it.qty : ''}</td>`;
+    }).join('');
+    const total = Object.values(o.items).reduce((s,it)=>s+it.qty, 0);
+    return `<tr><td>${i+1}</td><td class="pname">${o.name}</td>${cells}<td>${total}</td><td>${o.note||''}</td></tr>`;
+  }).join('');
+
+  const doc = `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8" />
+<title>봉주르후르츠 픽업 명단 ${currentDate}</title>
+<style>
+  @page{ size:A4 portrait; margin:12mm; }
+  body{ font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; color:#1a1a1a; margin:0; padding:16px; }
+  .print-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .print-header h1{font-size:18px;margin:0;font-weight:800;}
+  .print-header span{font-size:12px;color:#444;}
+  table{width:100%;border-collapse:collapse;}
+  thead{display:table-header-group;}
+  tr{page-break-inside:avoid;}
+  th,td{border:1px solid #888;text-align:center;}
+  td.pname{text-align:left;font-weight:700;}
+  .print-lg{font-size:13px;}
+  .print-lg th,.print-lg td{padding:6px 8px;}
+  .print-md{font-size:10.5px;}
+  .print-md th,.print-md td{padding:4px 6px;}
+  .print-sm{font-size:8.5px;}
+  .print-sm th,.print-sm td{padding:2px 4px;}
+  .hint{margin-top:14px;font-size:11px;color:#999;}
+  @media print{ .hint{ display:none; } }
+</style></head>
+<body>
+  <div class="print-header">
+    <h1>🍊 봉주르후르츠 픽업 명단</h1>
+    <span>${currentDate} · 총 ${filtered.length}명</span>
+  </div>
+  <table class="${sizeClass}">
+    <thead>${head}</thead>
+    <tbody>${bodyRows}</tbody>
+  </table>
+  <p class="hint">이 탭에서 자동으로 인쇄창이 뜨지 않으면 ⌘P(맥) 또는 Ctrl+P(윈도우)를 눌러주세요.</p>
+  <script>
+    window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 250); });
+  <\/script>
+</body></html>`;
+
+  const blob = new Blob([doc], { type:'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 30000);
+});
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(()=>{
+    if(Date.now() - lastLocalChange < 1500) return;
+    loadOrders();
+  }, 4000);
+}
+
+(async function init(){
+  await loadOrders();
+  await loadNoshow();
+  startPolling();
+})();
+</script>
+</body>
+</html>
