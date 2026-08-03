@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>봉주르후르츠 칠판</title>
+<style>
+:root{
+  --board: oklch(27% 0.03 155);
+  --frame: oklch(28% 0.04 55);
+  --chalk: oklch(93% 0.015 90);
+  --chalk-dim: oklch(93% 0.015 90 / 0.55);
+  --chalk-yellow: oklch(87% 0.11 95);
+  --chalk-pink: oklch(78% 0.13 18);
+  --chalk-blue: oklch(80% 0.09 210);
+  --line: oklch(93% 0.015 90 / 0.22);
+  --coral: oklch(62% 0.21 25);
+  --coral-2: oklch(55% 0.22 24);
+  --teal: oklch(58% 0.1 185);
+  --teal-2: oklch(50% 0.095 185);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--frame);
+  font-family:-apple-system,'SF Pro Text','Pretendard','Apple SD Gothic Neo',sans-serif;
+  color:var(--chalk);
+  -webkit-tap-highlight-color:transparent;
+}
+.board-frame{padding:18px;min-height:100vh;}
+.board{
+  background:var(--board);border-radius:20px;padding:20px 20px 24px;
+  max-width:900px;margin:0 auto;
+}
+.top{padding:0 0 16px;border-bottom:2px solid var(--line);margin-bottom:16px;}
+.store-name{font-size:24px;font-weight:700;letter-spacing:-0.01em;}
+.today-date{font-size:13px;color:var(--chalk-dim);margin-top:4px;}
+
+.board-columns{display:flex;gap:20px;align-items:flex-start;}
+.col-left{flex:1;min-width:0;}
+.divider{width:2px;align-self:stretch;background:var(--line);}
+.col-right{flex:0.85;min-width:0;}
+
+.section{padding-top:20px;}
+.section:first-child{padding-top:0;}
+.section-title{
+  text-transform:uppercase;font-size:13px;font-weight:600;color:var(--chalk-dim);
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.section-title .count{font-size:12px;opacity:.7;text-transform:none;}
+
+.card-list{display:flex;flex-direction:column;gap:10px;}
+.product-card{
+  display:grid;grid-template-columns:76px 1fr;gap:14px;padding:14px;border-radius:16px;
+  background:oklch(32% 0.03 155);border:1px solid var(--line);
+}
+.product-card .thumb{
+  width:76px;height:76px;border-radius:14px;background:oklch(24% 0.02 155);
+  display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--chalk-dim);text-align:center;
+}
+.product-name{font-size:16px;font-weight:600;}
+.deadline-simple{margin-top:6px;}
+.dday-badge{
+  display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--chalk-blue);
+  color:var(--chalk-blue);font-size:14px;font-weight:700;padding:2px 10px;border-radius:20px;width:fit-content;
+}
+.product-card.urgent{
+  background:linear-gradient(135deg,var(--coral),var(--coral-2));color:#fff;border:none;
+}
+.info-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.analog-clock{
+  width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);
+  border:1.5px solid #fff;position:relative;flex-shrink:0;
+}
+.analog-clock .hand{position:absolute;left:50%;top:50%;background:#fff;transform-origin:top center;border-radius:2px;}
+.analog-clock .hand.min{width:2px;height:13px;margin-left:-1px;opacity:.95;}
+.analog-clock .hand.sec{width:1px;height:15px;margin-left:-0.5px;opacity:.6;}
+.analog-clock .dot{position:absolute;left:50%;top:50%;width:4px;height:4px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);}
+.countdown-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.85);}
+.countdown{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
+@keyframes pulseSoft{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.75;transform:scale(1.03);}}
+@keyframes pulseHot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.65;transform:scale(1.08);}}
+.product-card.pulse-soft{animation:pulseSoft 1.6s ease-in-out infinite;}
+.product-card.pulse-hot{animation:pulseHot .6s ease-in-out infinite;background:linear-gradient(135deg,oklch(60% .22 22),oklch(52% .23 18));}
+
+.pickup-today-list{display:flex;flex-direction:column;gap:10px;}
+.pickup-today{
+  display:grid;grid-template-columns:88px 1fr;gap:14px;align-items:center;padding:14px;border-radius:16px;
+  background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;
+}
+.pickup-today .thumb{
+  width:88px;height:88px;border-radius:14px;background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.8);text-align:center;
+}
+.pickup-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.85);}
+.pickup-name{font-size:18px;font-weight:700;margin-top:2px;}
+
+.cal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.cal-card{
+  border-radius:14px;padding:12px 6px;text-align:center;background:oklch(32% 0.03 155);
+  border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+.cal-card .dow{font-size:11px;font-weight:500;color:var(--chalk-dim);}
+.cal-card .date{font-size:19px;font-weight:700;}
+.cal-card .prod{
+  font-size:11px;font-weight:500;min-height:14px;color:var(--chalk-dim);
+  display:flex;flex-direction:column;gap:2px;align-items:center;
+}
+.cal-card .prod-line{
+  word-break:keep-all;overflow-wrap:break-word;line-height:1.3;
+  max-width:100%;
+}
+.cal-card.today{background:linear-gradient(135deg,var(--teal),var(--teal-2));border:none;}
+.cal-card.today .dow,.cal-card.today .prod{color:rgba(255,255,255,.85);}
+.cal-card.closed{background:oklch(30% 0.01 90);}
+.cal-card.today.closed{background:oklch(30% 0.01 90);border:1.5px solid var(--teal);}
+.cal-card.today.closed .dow,.cal-card.today.closed .prod{color:var(--chalk-dim);}
+
+.right-block{margin-bottom:20px;}
+.right-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.right-title.late{color:var(--chalk-yellow);}
+.right-title.absent{color:var(--chalk-pink);}
+.right-title .count{font-size:12px;opacity:.8;font-weight:600;}
+.chalk-list{list-style:none;margin:0;padding:0;max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.chalk-list li{
+  border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.chalk-list .cust-name{font-weight:700;}
+.chalk-list .cust-product{color:var(--chalk-dim);}
+.chalk-list .time-tag{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chalk-list.late li{border-color:var(--chalk-yellow);}
+.chalk-list.late .time-tag{color:var(--chalk-yellow);}
+.chalk-list.absent li{border-color:var(--chalk-pink);opacity:.85;}
+.chalk-list.absent .time-tag{color:var(--chalk-pink);}
+.chalk-list::-webkit-scrollbar{width:5px;}
+.chalk-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+.empty-note{font-size:14px;color:var(--chalk-dim);padding:6px 2px;}
+
+.footer-note{text-align:center;font-size:13px;color:var(--chalk-dim);margin-top:18px;padding-top:12px;border-top:2px solid var(--line);}
+
+@media (max-width:640px){
+  .board-columns{flex-direction:column;}
+  .divider{display:none;}
+  .store-name{font-size:20px;}
+}
+</style>
+</head>
+<body>
+<div class="board-frame">
+<div class="board">
+
+<header class="top">
+  <div class="store-name">봉주르후르츠 칠판</div>
+  <div class="today-date" id="todayDate"></div>
+</header>
+
+<div class="board-columns">
+<div class="col-left">
+
+<section class="section">
+  <div class="section-title">지금 주문 가능 <span class="count" id="orderableCount"></span></div>
+  <div class="card-list" id="orderableList"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">오늘의 픽업 <span class="count" id="todayPickupCount"></span></div>
+  <div class="pickup-today-list" id="todayPickupList"></div>
+</section>
+
+<section class="section">
+  <div class="section-title">주간 픽업 일정</div>
+  <div class="cal-grid" id="calScroll"></div>
+</section>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="col-right">
+  <div class="section-title" style="margin-bottom:16px;">출석부</div>
+
+  <div class="right-block">
+    <div class="right-title late"><span class="mark">⏰</span>지각 (연기) <span class="count" id="lateCount"></span></div>
+    <ul class="chalk-list late" id="lateList"></ul>
+  </div>
+
+  <div class="right-block">
+    <div class="right-title absent"><span class="mark">✕</span>결석 (노쇼) <span class="count" id="absentCount"></span></div>
+    <ul class="chalk-list absent" id="absentList"></ul>
+  </div>
+</div>
+
+</div>
+
+<div class="footer-note">픽업 시간 및 장소는 매장 안내를 확인해주세요</div>
+
+</div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const todayStr = () => {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+};
+
+const now = new Date();
+$('#todayDate').textContent = now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+
+// 실시간 아날로그 시계 (장식용, 실제 현재 시각)
+function runClock(el){
+  const min = el.querySelector('.hand.min');
+  const sec = el.querySelector('.hand.sec');
+  function tick(){
+    const d = new Date();
+    min.style.transform = `rotate(${d.getMinutes()*6 + d.getSeconds()*0.1}deg)`;
+    sec.style.transform = `rotate(${d.getSeconds()*6}deg)`;
+  }
+  tick();
+  setInterval(tick,1000);
+}
+
+// 마감 임박 기준 (남은 시간)
+const URGENT_MS = 3 * 60 * 60 * 1000;   // 3시간 이내면 카운트다운 표시
+const SOFT_MS = 30 * 60 * 1000;          // 30분 이내면 부드러운 강조
+const HOT_MS  = 10 * 60 * 1000;          // 10분 이내면 강한 강조
+
+function fmtHMS(ms){
+  const s = Math.max(0, Math.floor(ms/1000));
+  const h = String(Math.floor(s/3600)).padStart(2,'0');
+  const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+  const sec = String(s%60).padStart(2,'0');
+  return `${h}:${m}:${sec}`;
+}
+
+function ddayLabel(deadlineAt){
+  const diff = new Date(deadlineAt).getTime() - Date.now();
+  if(diff <= 0) return '마감';
+  const days = Math.floor(diff / 86400000);
+  if(days === 0) return '오늘마감';
+  return 'D-' + days;
+}
+
+let boardData = { campaigns:[], noshowLog:[], postponedLog:[] };
+const countdownTimers = [];
+
+function clearCountdowns(){
+  countdownTimers.forEach(t=>clearTimeout(t));
+  countdownTimers.length = 0;
+}
+
+function renderOrderable(){
+  const today = todayStr();
+  // 아직 마감 안 지난 캠페인만 "지금 주문 가능"
+  const active = boardData.campaigns.filter(c => c.deadlineAt && new Date(c.deadlineAt).getTime() > Date.now());
+  $('#orderableCount').textContent = active.length ? active.length : '';
+  const list = $('#orderableList');
+
+  if(active.length === 0){
+    list.innerHTML = '<div class="empty-note">지금 주문 가능한 상품이 없어요</div>';
+    return;
+  }
+
+  list.innerHTML = active.map((c,i)=>{
+    const remaining = new Date(c.deadlineAt).getTime() - Date.now();
+    const urgent = remaining <= URGENT_MS;
+    const thumb = c.imageUrl
+      ? `<img class="thumb" src="${c.imageUrl}" alt="${c.product}" style="object-fit:cover;" />`
+      : '<div class="thumb">상품 이미지</div>';
+    if(urgent){
+      return `
+      <div class="product-card urgent" id="card${i}">
+        ${thumb}
+        <div class="info">
+          <div class="product-name">${c.product}</div>
+          <div class="info-row">
+            <div class="analog-clock" id="clock${i}"><div class="hand min"></div><div class="hand sec"></div><div class="dot"></div></div>
+            <div class="countdown-wrap">
+              <div class="countdown-label">마감까지</div>
+              <div class="countdown" id="cd${i}">${fmtHMS(remaining)}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="product-card">
+      ${thumb}
+      <div class="info">
+        <div class="product-name">${c.product}</div>
+        <div class="deadline-simple"><span class="dday-badge">${ddayLabel(c.deadlineAt)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('#orderableList .analog-clock').forEach(runClock);
+
+  active.forEach((c,i)=>{
+    const remaining = new Date(c.deadlineAt).getTime() - Date.now();
+    if(remaining <= URGENT_MS){
+      runCountdown(i, new Date(c.deadlineAt).getTime());
+    }
+  });
+}
+
+function runCountdown(i, targetMs){
+  const card = $('#card'+i);
+  const cd = $('#cd'+i);
+  if(!card || !cd) return;
+  function tick(){
+    const remaining = targetMs - Date.now();
+    cd.textContent = fmtHMS(remaining);
+    card.classList.remove('pulse-soft','pulse-hot');
+    if(remaining <= HOT_MS) card.classList.add('pulse-hot');
+    else if(remaining <= SOFT_MS) card.classList.add('pulse-soft');
+    if(remaining <= 0){ cd.textContent = '마감'; return; }
+    countdownTimers.push(setTimeout(tick, 1000));
+  }
+  tick();
+}
+
+function renderTodayPickup(){
+  const today = todayStr();
+  const items = boardData.campaigns.filter(c => c.pickupDate === today);
+  $('#todayPickupCount').textContent = items.length ? items.length : '';
+  const list = $('#todayPickupList');
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty-note">오늘 예정된 픽업이 없어요</div>';
+    return;
+  }
+  list.innerHTML = items.map(c=>`
+    <div class="pickup-today">
+      ${c.imageUrl ? `<img class="thumb" src="${c.imageUrl}" alt="${c.product}" style="object-fit:cover;" />` : '<div class="thumb">오늘의 픽업 이미지</div>'}
+      <div>
+        <div class="pickup-label">오늘의 픽업</div>
+        <div class="pickup-name">${c.product}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderWeekCalendar(){
+  const days = ['일','월','화','수','목','금','토'];
+  const cal = $('#calScroll');
+  cal.innerHTML = '';
+  for(let i=-1;i<=4;i++){
+    const d = new Date();
+    d.setDate(d.getDate()+i);
+    const dateKey = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const isSunday = d.getDay() === 0;
+    const prods = boardData.campaigns.filter(c=>c.pickupDate===dateKey).map(c=>c.product);
+    const card = document.createElement('div');
+    card.className = 'cal-card' + (i===0?' today':'') + (isSunday?' closed':'');
+    const prodHtml = isSunday
+      ? '<div class="prod-line">휴무</div>'
+      : prods.map(p=>`<div class="prod-line">${p}</div>`).join('');
+    card.innerHTML = `<div class="dow">${days[d.getDay()]}</div><div class="date">${d.getDate()}</div><div class="prod">${prodHtml}</div>`;
+    cal.appendChild(card);
+  }
+}
+
+function fmtMD(dateStr){
+  if(!dateStr) return '';
+  const parts = dateStr.split('-');
+  return parts.length===3 ? `${Number(parts[1])}/${Number(parts[2])}` : dateStr;
+}
+
+function renderAttendance(){
+  const today = todayStr();
+
+  // 지각(연기): 아직 지나지 않았거나 오늘인 연기 건만 (완전히 지난 옛 기록은 숨김)
+  const late = (boardData.postponedLog||[])
+    .filter(l => !l.toDate || l.toDate >= today)
+    .sort((a,b)=> (b.at||'').localeCompare(a.at||''));
+  $('#lateCount').textContent = late.length + '명';
+  const lateEl = $('#lateList');
+  lateEl.innerHTML = late.length === 0
+    ? '<div class="empty-note">지각(연기) 대기 중인 사람이 없어요</div>'
+    : late.map(l=>`<li><span class="cust-name">${l.name}</span><span class="cust-product">${l.product}</span><span class="time-tag">${fmtMD(l.fromDate)} → ${fmtMD(l.toDate)}</span></li>`).join('');
+
+  // 결석(노쇼): 최근 14일 이내만 표시 (오래된 기록으로 목록이 무한정 커지는 것 방지)
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-14);
+  const cutoffStr = cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
+  const absent = (boardData.noshowLog||[])
+    .filter(n => n.date >= cutoffStr)
+    .sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  $('#absentCount').textContent = absent.length + '명';
+  const absentEl = $('#absentList');
+  absentEl.innerHTML = absent.length === 0
+    ? '<div class="empty-note">최근 결석(노쇼) 기록이 없어요</div>'
+    : absent.map(n=>{
+        const prod = Object.keys(n.items||{}).join(', ');
+        return `<li><span class="cust-name">${n.name}</span><span class="cust-product">${prod}</span></li>`;
+      }).join('');
+}
+
+function renderAll(){
+  clearCountdowns();
+  renderOrderable();
+  renderTodayPickup();
+  renderWeekCalendar();
+  renderAttendance();
+}
+
+async function loadBoard(){
+  try{
+    const res = await fetch('/api/public/board');
+    if(!res.ok) throw new Error('load failed');
+    boardData = await res.json();
+  }catch(e){
+    // 실패해도 이전 데이터 유지, 다음 주기에 재시도
+  }
+  renderAll();
+}
+
+loadBoard();
+setInterval(loadBoard, 30000); // 30초마다 최신 데이터로 갱신
+</script>
+</body>
+</html>
