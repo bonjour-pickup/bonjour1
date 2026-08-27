@@ -482,7 +482,7 @@
     <div class="datebar">
       <input type="date" id="dateInput" />
       <button class="btn btn-ghost" id="resetBtn" style="padding:6px 10px;font-size:12px;">🗑 초기화</button>
-      <div class="sync"><span class="dot"></span><span id="syncLabel">실시간 동기화</span><button class="logout-btn" id="logoutBtn">로그아웃</button></div>
+      <div class="sync"><span class="dot"></span><span id="syncLabel">실시간 동기화</span></div>
     </div>
   </header>
 
@@ -3561,10 +3561,13 @@ async function doLogin(){
 $('#loginBtn').addEventListener('click', doLogin);
 $('#loginPassword').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') doLogin(); });
 
-$('#logoutBtn').addEventListener('click', ()=>{
-  if(pollTimer) clearInterval(pollTimer);
-  forceLogout('');
-});
+const logoutBtnEl = $('#logoutBtn');
+if(logoutBtnEl){
+  logoutBtnEl.addEventListener('click', ()=>{
+    if(pollTimer) clearInterval(pollTimer);
+    forceLogout('');
+  });
+}
 
 async function startApp(){
   await loadOrders();
@@ -3579,12 +3582,8 @@ async function startApp(){
 }
 
 (function initAuthGate(){
-  if(authToken){
-    hideLoginScreen();
-    startApp();
-  } else {
-    showLoginScreen();
-  }
+  hideLoginScreen();
+  startApp();
 })();
 </script>
 </body>
