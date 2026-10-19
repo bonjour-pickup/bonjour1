@@ -447,6 +447,14 @@
   .modal-card h2{font-size:17px;margin:0 0 4px;font-weight:800;letter-spacing:-0.4px;}
   .modal-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;}
   .modal-empty{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:24px 0;}
+  .past-inline{margin:0 16px 12px;padding:12px 14px 4px;border-radius:14px;background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.28);}
+  .past-inline .pi-title{font-size:13px;font-weight:800;color:#C9261C;margin-bottom:4px;}
+  .past-inline .pi-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid rgba(255,59,48,.15);}
+  .past-inline .pi-name{font-weight:800;font-size:14px;}
+  .past-inline .pi-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .past-inline .pi-tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;}
+  .past-inline .pi-tag.none{background:rgba(255,149,0,.16);color:#B25000;}
+  .past-inline .pi-tag.noshow{background:rgba(255,59,48,.13);color:#C9261C;}
   .result-row{
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     padding:11px 0;border-bottom:1px solid var(--line);
@@ -516,6 +524,7 @@
   <section id="tab-list">
     <div class="search"><input id="searchInput" placeholder="이름·초성·번호로 검색 (ㄱ, 가, 감, 1561)" autocomplete="off" /></div>
     <div id="searchSuggest" class="search-suggest" style="display:none;"></div>
+    <div id="pastInline" class="past-inline" style="display:none;"></div>
     <div id="statSummary" class="stat-summary" style="display:none;"></div>
     <div style="padding:0 16px 10px;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
       <button class="btn btn-ghost" id="pastPendingBtn" style="padding:7px 12px;font-size:12.5px;">📌 지난 미수령 조회</button>
@@ -1373,6 +1382,7 @@ $('#searchSuggest') && $('#searchSuggest').addEventListener('click', (e)=>{
   $('#searchInput').value = chip.dataset.pickname;
   render();
   renderSearchSuggest();
+  refreshPastInline();
 });
 
 /* ===== 회원 관리 ===== */
@@ -2258,6 +2268,95 @@ async function searchPendingAcrossDates(query, daysBack){
   }
   return results;
 }
+
+/* ===== 메인 검색 연동: 검색하면 지난 7일 미수령/노쇼 이력도 함께 표시 ===== */
+const PAST_INLINE_DAYS = 7;
+const pastDayCache = {};   // date -> {at, list}
+let pastInlineSeq = 0, pastInlineTimer = null, pastInlineResults = [];
+
+async function loadOrdersForDateCached(date){
+  const c = pastDayCache[date];
+  if(c && Date.now() - c.at < 15000) return c.list;
+  const res = await window.storage.get(ordersKey(date), true);
+  const list = res && res.value ? JSON.parse(res.value) : [];
+  pastDayCache[date] = { at: Date.now(), list };
+  return list;
+}
+
+async function searchPastIssues(query, daysBack){
+  const q = (query||'').trim();
+  if(!q) return [];
+  const dates = [];
+  for(let i=1;i<=daysBack;i++) dates.push(pastDateStr(i));
+  const lists = await Promise.all(dates.map(d => loadOrdersForDateCached(d).catch(()=>null)));
+  const out = [];
+  lists.forEach((list, i)=>{
+    if(!list) return;
+    list.forEach(o=>{
+      if(!orderMatches(o, q)) return;
+      Object.entries(o.items||{}).forEach(([prod, it])=>{
+        const st = normalizeItem(it).status;
+        if(st === 'none' || st === 'noshow'){
+          out.push({ date: dates[i], orderId:o.id, name: displayName(o.name), product:prod, qty:it.qty, status:st });
+        }
+      });
+    });
+  });
+  out.sort((a,b)=> b.date.localeCompare(a.date));
+  return out;
+}
+
+function renderPastInline(results){
+  const box = $('#pastInline');
+  if(!box) return;
+  if(!results.length){ box.style.display='none'; box.innerHTML=''; return; }
+  const nNone = results.filter(r=>r.status==='none').length;
+  box.style.display = 'block';
+  box.innerHTML = `<div class="pi-title">⚠️ 지난 ${PAST_INLINE_DAYS}일 미수령 이력 ${results.length}건${nNone!==results.length?` (미수령 ${nNone} · 노쇼 ${results.length-nNone})`:''}</div>` +
+    results.map((r,i)=>`
+      <div class="pi-row">
+        <div>
+          <div class="pi-name">${r.name}</div>
+          <div class="pi-sub">${r.date.slice(5).replace('-','/')} · ${r.product} ${r.qty}개<span class="pi-tag ${r.status}">${r.status==='none'?'미수령':'노쇼'}</span></div>
+        </div>
+        ${r.status==='none'?`<button class="mini-btn primary" data-act="resolveinline" data-idx="${i}">수령 처리</button>`:''}
+      </div>`).join('');
+}
+
+function refreshPastInline(){
+  clearTimeout(pastInlineTimer);
+  const q = ($('#searchInput').value||'').trim();
+  const mySeq = ++pastInlineSeq;
+  if(!q){ pastInlineResults = []; renderPastInline([]); return; }
+  pastInlineTimer = setTimeout(async ()=>{
+    try{
+      const r = await searchPastIssues(q, PAST_INLINE_DAYS);
+      if(mySeq !== pastInlineSeq) return;
+      pastInlineResults = r;
+      renderPastInline(r);
+    }catch(e){
+      if(mySeq === pastInlineSeq) renderPastInline([]);
+    }
+  }, 300);
+}
+
+$('#pastInline').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-act="resolveinline"]');
+  if(!btn) return;
+  const r = pastInlineResults[Number(btn.dataset.idx)];
+  if(!r) return;
+  btn.disabled = true;
+  const ok = await resolvePendingItem(r.date, r.orderId, r.product);
+  if(ok){
+    delete pastDayCache[r.date];
+    toast(`${r.name} · ${r.product} 수령 처리됐어요`);
+    pastInlineResults = pastInlineResults.filter(x=>x!==r);
+    renderPastInline(pastInlineResults);
+  }else{
+    toast('처리에 실패했어요, 다시 시도해주세요');
+    btn.disabled = false;
+  }
+});
 
 function renderPastPendingResults(results){
   const el = $('#pastPendingResults');
@@ -3192,7 +3291,7 @@ document.querySelectorAll('.stat').forEach(el=>{
   });
 });
 
-$('#searchInput').addEventListener('input', ()=>{ render(); renderSearchSuggest(); });
+$('#searchInput').addEventListener('input', ()=>{ render(); renderSearchSuggest(); refreshPastInline(); });
 $('#searchInput').addEventListener('focus', ()=>{
   if(searchClearOnFocus){
     searchClearOnFocus = false;
@@ -3200,11 +3299,13 @@ $('#searchInput').addEventListener('focus', ()=>{
       $('#searchInput').value = '';
       render();
       renderSearchSuggest();
+      refreshPastInline();
     }
   }
 });
 $('#dateInput').addEventListener('change', (e)=>{
   currentDate = e.target.value;
+  refreshPastInline();
   orders = [];          // 이전 날짜 데이터 즉시 제거 (새 날짜로 새는 것 방지)
   activeProductFilter = null;
   statFilter = 'all';
@@ -3300,6 +3401,7 @@ $('#weekStrip').addEventListener('click', (e)=>{
   const date = cell.dataset.date;
   if(date === currentDate) return;
   currentDate = date;
+  refreshPastInline();
   $('#dateInput').value = date;
   orders = [];
   activeProductFilter = null;
